@@ -1,0 +1,130 @@
+= Heap with minimum and maximum access
+(c) Stefan Salewski
+:experimental:
+:source-highlighter: pygments
+:pygments-style: monokai
+:icons: font
+
+Nim implementation of a Minimum-Maximum Heap as described in
+
+https://en.wikipedia.org/wiki/Min-max_heap
+
+http://www.akira.ruc.dk/~keld/teaching/algoritmedesign_f03/Artikler/02/Atkinson86.pdf
+
+NOTE: See also https://nim-lang.github.io/Nim/heapqueue.html
+
+NOTE: Nim generated API documentation is available here: http://ssalewski.de/minmaxheap.html
+
+The implementation follow very closely these papers, writing the Nim code
+was straight forward. The heap is generic, this means it works for most data elements
+when "<" relation is defined. Add(), popMin() and popMax() operations are O(log N), access
+to min and max is O(1) according to Wikipedia. Build time of initial heap is linear O(N)
+and read access to min or max element is O(1).
+
+Use cases for such type of a heap are rare. One application is a ID-Number generator,
+where IDs are generated in increasing order, but can be returned and reused. Reused is always the smallest
+available ID, but at the same time we need to know which is the largest ID still in use. That can be
+done with popMin() and max() operations. In the original paper external quicksort was mentioned as a use case.
+
+Initial heap can be generated from an array or a seq. Pop() operations will fail when len()
+is already zero.
+
+The elements in heap are stored in a seq, so there is nearly no space overhead involved.
+
+.Cost in big O notation as a function of number of elements (N)
+[options="header"]
+|===
+| proc name | operation | costs |
+|toMinMaxHeap() | creation  | O(N) |
+|initMinMaxHeap() | create empty heap  | O(1) |
+|min() | get minimum  | O(1) |
+|max() | get maximum  | O(1) |
+|clear() | reset  | O(1) |
+|len() | get number of elements  | O(1) |
+|add() | insert an element  | O(log(n)) |
+|popMin() | delete minimum  | O(log(n)) |
+|popMax() | delete maximum  | O(log(n)) |
+|===
+
+Install:
+
+----
+nimble install https://github.com/StefanSalewski/minmaxheap
+----
+
+Currently these procs are available:
+
+[[API]]
+[source,nim]
+.API
+----
+type MinMaxHeap*[T] = distinct seq[T]
+
+proc initMinMaxHeap*[T](): MinMaxHeap[T]
+
+proc toMinMaxHeap*[T](h: openarray[T]): MinMaxHeap[T]
+
+proc clear*[T](h: var MinMaxHeap[T])
+
+proc len*[T](h: MinMaxHeap[T]): int
+
+proc empty*[T](h: MinMaxHeap[T]): bool
+
+proc add*[T](h: var MinMaxHeap[T]; i: T)
+
+proc min*[T](h: var MinMaxHeap[T]): T
+
+proc max*[T](h: var MinMaxHeap[T]): T
+
+proc popMin*[T](h: var MinMaxHeap[T]): T
+
+proc popMax*[T](h: var MinMaxHeap[T]): T
+
+proc `$`*[T](h: MinMaxHeap[T]): string =
+----
+
+Here is an example how the heap can be used:
+
+[[t.nim]]
+[source,nim]
+.t.nim
+----
+import minmaxheap
+
+var
+  # h = toMinMaxHeap[int](@[5, 3, 9, 1, 0])
+  h = toMinMaxHeap([5, 3, 9, 1, 0])
+
+echo $(h) # @[0, 5, 9, 1, 3]
+echo h.min # 0
+echo h.max # 9
+echo h.len # 5
+echo h.popMin # 0
+echo h.popMax # 9
+echo h.len # 3
+echo h.min # 1
+echo h.max # 5
+h.add(8)
+echo h.len # 4
+echo h.popMax # 8
+echo h.len # 3
+h.clear
+echo h.len # 0
+
+type
+  O = object
+    key: float
+
+# we need < operator defines for elements
+proc `<`(a, b: O): bool =
+  a.key < b.key
+
+var
+  l = initMinMaxHeap[O]()
+l.add(O(key: 1.2))
+l.add(O(key: 0.9))
+l.add(O(key: 3.3))
+echo l.popMax # (key: 3.3)
+echo l.popMin # (key: 0.9)
+----
+
